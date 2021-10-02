@@ -1,5 +1,8 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
@@ -16,6 +19,10 @@ public class VideoProgressBar : MonoBehaviour//, IDragHandler, IPointerDownHandl
     Button playBtn;
     bool looped = false;
     bool ButtonLooped = false;
+    private void Awake()
+    {
+        videoPlayer = GetComponent<VideoPlayer>();
+    }
     private void Update()
     {
         if (videoPlayer.time < 1 && looped)
@@ -68,6 +75,7 @@ public class VideoProgressBar : MonoBehaviour//, IDragHandler, IPointerDownHandl
     {
         videoPlayer.time = 40f;
         Question.SetActive(false);
+        StartCoroutine(UpdateScore(button));
         print(button+" was selected!");
         buttonSelected = true;
     }
@@ -76,7 +84,31 @@ public class VideoProgressBar : MonoBehaviour//, IDragHandler, IPointerDownHandl
         if (!buttonSelected && !ButtonLooped)
         {
             print("Nothing was Selected!");
+            StartCoroutine(UpdateScore("none"));
             ButtonLooped = true;
+        }
+    }
+    IEnumerator UpdateScore(string answer)
+    {
+        List<IMultipartFormSection> forms = new List<IMultipartFormSection>();
+        forms.Add(new MultipartFormDataSection("question", "Q1"));
+        forms.Add(new MultipartFormDataSection("answer", answer));
+
+        UnityWebRequest www = UnityWebRequest.Post("http://127.0.0.1:8000/api/demo", forms);
+
+        yield return www.SendWebRequest();
+        print("Webrequest Sent");
+        print(www.downloadHandler.text);
+        print(www.error);
+        if (www.downloadHandler.text == "Data Inserted")
+        {
+            string alertmsg = "Data Inserted";
+            print(alertmsg);
+        }
+        else
+        {
+            string alertmsg = "Error";
+            print(alertmsg);
         }
     }
 }
